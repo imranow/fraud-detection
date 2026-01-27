@@ -1,0 +1,35 @@
+# Default configuration
+defaults:
+  - _self_
+  - model: xgboost
+  - data: default
+
+# General settings
+project_name: fraud_detection
+random_seed: 42
+verbose: true
+
+# Paths
+paths:
+  data_dir: data
+  raw_data: ${paths.data_dir}/raw
+  processed_data: ${paths.data_dir}/processed
+  models: models
+  logs: logs
+
+# Training settings
+training:
+  test_size: 0.2
+  validation_size: 0.1
+  stratify: true
+  n_folds: 5
+
+# Feature engineering
+features:
+  categorical_encoding: target
+  numerical_scaling: standard
+  handle_missing: median
+  feature_selection:
+    enabled: true
+    method: importance
+    threshold: 0.01

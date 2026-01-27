@@ -1,0 +1,25 @@
+# LightGBM model configuration
+model_type: lightgbm
+
+hyperparameters:
+  n_estimators: 100
+  max_depth: -1
+  num_leaves: 31
+  learning_rate: 0.1
+  subsample: 0.8
+  colsample_bytree: 0.8
+  min_child_samples: 20
+  reg_alpha: 0
+  reg_lambda: 0
+  random_state: ${random_seed}
+  n_jobs: -1
+  objective: binary
+  metric: auc
+  is_unbalance: true
+  verbose: -1
+
+# Early stopping
+early_stopping:
+  enabled: true
+  rounds: 50
+  verbose: false

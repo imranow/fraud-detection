@@ -1,0 +1,43 @@
+# Ignore everything
+*
+
+# Allow only what we need
+!src/
+!models/
+!configs/
+!requirements.txt
+!pyproject.toml
+
+# Ignore Python artifacts
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache
+**/.mypy_cache
+
+# Ignore data files
+data/
+
+# Ignore virtual environments
+.venv/
+venv/
+
+# Ignore IDE files
+.idea/
+.vscode/
+*.swp
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore docs and tests for production image
+docs/
+tests/
+notebooks/
+scripts/
+
+# Ignore logs
+*.log
+logs/
