@@ -62,11 +62,12 @@ def parse_args() -> argparse.Namespace:
     )
     
     parser.add_argument(
-        "--feature-engineering",
-        action="store_true",
-        default=True,
-        help="Apply feature engineering",
+        "--no-feature-engineering",
+        action="store_false",
+        dest="feature_engineering",
+        help="Disable feature engineering",
     )
+    parser.set_defaults(feature_engineering=True)
     
     parser.add_argument(
         "--select-features",
@@ -83,11 +84,12 @@ def parse_args() -> argparse.Namespace:
     )
     
     parser.add_argument(
-        "--save-model",
-        action="store_true",
-        default=True,
-        help="Save trained model(s)",
+        "--no-save-model",
+        action="store_false",
+        dest="save_model",
+        help="Do not save trained model(s)",
     )
+    parser.set_defaults(save_model=True)
     
     parser.add_argument(
         "--random-state",

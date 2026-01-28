@@ -25,14 +25,14 @@ logger = get_logger(__name__)
 try:
     import xgboost as xgb
     HAS_XGBOOST = True
-except (ImportError, Exception) as e:
+except ImportError as e:
     HAS_XGBOOST = False
     logger.warning(f"XGBoost not available: {type(e).__name__}")
 
 try:
     import lightgbm as lgb
     HAS_LIGHTGBM = True
-except (ImportError, Exception) as e:
+except ImportError as e:
     HAS_LIGHTGBM = False
     logger.warning(f"LightGBM not available: {type(e).__name__}")
 
