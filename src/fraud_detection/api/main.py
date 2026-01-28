@@ -55,7 +55,7 @@ async def lifespan(app: FastAPI):
         model_files = list(model_path.glob("random_forest_*.joblib"))
         
         if model_files:
-            latest_model = sorted(model_files)[-1]
+            latest_model = max(model_files, key=lambda f: f.stat().st_mtime)
             init_model_service(model_path=latest_model)
             logger.info(f"Model loaded: {latest_model}")
         else:

@@ -96,8 +96,8 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install httpx
-      
+          pip install httpx pytest
+
       - name: Run API tests
         run: |
           PYTHONPATH=src pytest tests/test_api.py -v --tb=short
@@ -186,7 +186,9 @@ jobs:
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f k8s/
-          kubectl rollout restart deployment/fraud-detection-api -n fraud-detection
+          kubectl set image deployment/fraud-detection-api \
+            fraud-detection-api=${{ secrets.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:sha-${GITHUB_SHA::7} \
+            -n fraud-detection
       
       - name: Verify deployment
         run: |

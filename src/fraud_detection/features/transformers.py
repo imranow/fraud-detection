@@ -131,9 +131,9 @@ class TimeFeatures(BaseEstimator, TransformerMixin):
         # Day within the dataset (elapsed days)
         X["Day_elapsed"] = time // seconds_per_day
 
-        # Approximate weekend detection (every 5th and 6th day)
+        # Approximate weekend detection (every 5th and 6th day, or day 0 as Sunday)
         day_of_week = (time // seconds_per_day) % 7
-        X["Is_weekend"] = ((day_of_week >= 5)).astype(int)
+        X["Is_weekend"] = ((day_of_week >= 5) | (day_of_week == 0)).astype(int)
 
         return X
 

@@ -184,7 +184,7 @@ class FeatureEngineer:
 
     def _collect_feature_names(self, X: pd.DataFrame) -> None:
         """Collect all feature names after transformation."""
-        X_sample = self._apply_transformers(X.head(10))
+        X_sample = self._apply_transformers(X.head(100))
         self._feature_names = list(X_sample.columns)
 
     def get_feature_names(self) -> List[str]:

@@ -66,7 +66,7 @@ class ModelService:
             if models_dir.exists():
                 model_files = list(models_dir.glob("random_forest_*.joblib"))
                 if model_files:
-                    path = sorted(model_files)[-1]  # Latest model
+                    path = max(model_files, key=lambda f: f.stat().st_mtime)
                     logger.info(f"Auto-selected model: {path}")
         
         if path is None or not Path(path).exists():
@@ -81,9 +81,9 @@ class ModelService:
         self._feature_names = artifact.get("feature_names", [])
         self._training_metrics = artifact.get("training_metrics", {})
         
-        # Initialize feature engineer for consistent preprocessing
-        self._feature_engineer = FeatureEngineer()
-        
+        # Load pre-fitted feature engineer if available in artifact
+        self._feature_engineer = artifact.get("feature_engineer", None)
+
         self._is_loaded = True
         logger.info(f"Model loaded: {self._model_name} with {len(self._feature_names)} features")
 
@@ -109,7 +109,7 @@ class ModelService:
         # Apply feature engineering
         if self._feature_engineer is not None:
             try:
-                df_fe = self._feature_engineer.fit_transform(df)
+                df_fe = self._feature_engineer.transform(df)
             except Exception as e:
                 logger.warning(f"Feature engineering failed, using raw features: {e}")
                 df_fe = df
