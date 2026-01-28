@@ -47,23 +47,25 @@ async def lifespan(app: FastAPI):
     """Application lifespan handler for startup/shutdown."""
     # Startup
     logger.info("Starting fraud detection API...")
-    
+
     try:
         # Try to load model from environment or default path
         model_path = Path("models")
         model_files = list(model_path.glob("random_forest_*.joblib"))
-        
+
         if model_files:
             latest_model = max(model_files, key=lambda f: f.stat().st_mtime)
             init_model_service(model_path=latest_model)
             logger.info(f"Model loaded: {latest_model}")
         else:
-            logger.warning("No model found. API will return errors until model is loaded.")
+            logger.warning(
+                "No model found. API will return errors until model is loaded."
+            )
     except Exception as e:
         logger.error(f"Failed to load model on startup: {e}")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down fraud detection API...")
 
@@ -73,13 +75,13 @@ app = FastAPI(
     title="Fraud Detection API",
     description="""
     Production-grade API for real-time credit card fraud detection.
-    
+
     ## Features
     - Single and batch transaction predictions
     - Risk level classification (LOW, MEDIUM, HIGH, CRITICAL)
     - Prometheus metrics for monitoring
     - Health checks for orchestration
-    
+
     ## Model
     The API uses a Random Forest classifier trained on 284,807 transactions
     with 48 engineered features achieving:
@@ -116,7 +118,7 @@ async def root():
 async def health_check():
     """Health check endpoint for load balancers and orchestration."""
     service = get_model_service()
-    
+
     return HealthResponse(
         status="healthy" if service.is_loaded else "degraded",
         model_loaded=service.is_loaded,
@@ -130,10 +132,10 @@ async def health_check():
 async def model_info():
     """Get information about the loaded model."""
     service = get_model_service()
-    
+
     if not service.is_loaded:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    
+
     return ModelInfoResponse(
         model_name=service.model_name,
         n_features=len(service.feature_names),
@@ -146,45 +148,47 @@ async def model_info():
 @app.post("/predict", response_model=PredictionOutput, tags=["Predictions"])
 async def predict_transaction(
     transaction: TransactionInput,
-    threshold: Optional[float] = Query(None, ge=0.0, le=1.0, description="Custom threshold"),
+    threshold: Optional[float] = Query(
+        None, ge=0.0, le=1.0, description="Custom threshold"
+    ),
 ):
     """
     Predict fraud for a single transaction.
-    
+
     Returns the fraud classification, probability, and risk level.
     """
     service = get_model_service()
-    
+
     if not service.is_loaded:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    
+
     # Use custom threshold if provided
     if threshold is not None:
         original_threshold = service.threshold
         service.threshold = threshold
-    
+
     start_time = time.time()
-    
+
     try:
         is_fraud, probability, risk_level = service.predict_single(
             transaction.model_dump()
         )
-        
+
         # Record metrics
         latency = time.time() - start_time
         PREDICTION_LATENCY.observe(latency)
         PREDICTIONS_TOTAL.labels(result="fraud" if is_fraud else "legit").inc()
-        
+
         if is_fraud:
             FRAUD_DETECTED.inc()
-        
+
         return PredictionOutput(
             is_fraud=is_fraud,
             fraud_probability=probability,
             risk_level=risk_level,
             threshold_used=service.threshold,
         )
-    
+
     finally:
         # Restore original threshold
         if threshold is not None:
@@ -198,24 +202,24 @@ async def predict_batch(
 ):
     """
     Predict fraud for multiple transactions in batch.
-    
+
     Maximum 1000 transactions per request.
     """
     service = get_model_service()
-    
+
     if not service.is_loaded:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    
+
     if threshold is not None:
         original_threshold = service.threshold
         service.threshold = threshold
-    
+
     start_time = time.time()
-    
+
     try:
         transactions = [t.model_dump() for t in batch.transactions]
         results = service.predict(transactions)
-        
+
         predictions = [
             PredictionOutput(
                 is_fraud=is_fraud,
@@ -225,23 +229,23 @@ async def predict_batch(
             )
             for is_fraud, prob, risk in results
         ]
-        
+
         fraud_count = sum(1 for p in predictions if p.is_fraud)
         latency = (time.time() - start_time) * 1000  # Convert to ms
-        
+
         # Record metrics
         PREDICTION_LATENCY.observe(latency / 1000)
         for p in predictions:
             PREDICTIONS_TOTAL.labels(result="fraud" if p.is_fraud else "legit").inc()
         FRAUD_DETECTED.inc(fraud_count)
-        
+
         return BatchPredictionOutput(
             predictions=predictions,
             total_transactions=len(predictions),
             fraud_detected=fraud_count,
             processing_time_ms=latency,
         )
-    
+
     finally:
         if threshold is not None:
             service.threshold = original_threshold
@@ -259,7 +263,7 @@ async def metrics():
 # For running with uvicorn directly
 if __name__ == "__main__":
     import uvicorn
-    
+
     uvicorn.run(
         "fraud_detection.api.main:app",
         host="0.0.0.0",

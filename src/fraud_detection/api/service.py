@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 import joblib
-import numpy as np
 import pandas as pd
 
 from fraud_detection.features import FeatureEngineer, FeatureSelector
@@ -15,7 +14,7 @@ logger = get_logger(__name__)
 
 class ModelService:
     """Service for loading models and making predictions.
-    
+
     Handles model loading, feature engineering, and inference
     for the fraud detection API.
     """
@@ -35,14 +34,14 @@ class ModelService:
     ):
         """
         Initialize the model service.
-        
+
         Args:
             model_path: Path to the model file
             threshold: Classification threshold
         """
         self.model_path = model_path
         self.threshold = threshold
-        
+
         self._model = None
         self._model_name: str = ""
         self._feature_names: List[str] = []
@@ -54,12 +53,12 @@ class ModelService:
     def load(self, model_path: Optional[Path] = None) -> None:
         """
         Load the model from disk.
-        
+
         Args:
             model_path: Optional override path
         """
         path = model_path or self.model_path
-        
+
         if path is None:
             # Try to find the best model in models directory
             models_dir = Path("models")
@@ -68,24 +67,26 @@ class ModelService:
                 if model_files:
                     path = max(model_files, key=lambda f: f.stat().st_mtime)
                     logger.info(f"Auto-selected model: {path}")
-        
+
         if path is None or not Path(path).exists():
             raise FileNotFoundError(f"Model not found: {path}")
-        
+
         logger.info(f"Loading model from {path}")
-        
+
         artifact = joblib.load(path)
-        
+
         self._model = artifact["model"]
         self._model_name = artifact.get("model_name", "unknown")
         self._feature_names = artifact.get("feature_names", [])
         self._training_metrics = artifact.get("training_metrics", {})
-        
+
         # Load pre-fitted feature engineer if available in artifact
         self._feature_engineer = artifact.get("feature_engineer", None)
 
         self._is_loaded = True
-        logger.info(f"Model loaded: {self._model_name} with {len(self._feature_names)} features")
+        logger.info(
+            f"Model loaded: {self._model_name} with {len(self._feature_names)} features"
+        )
 
     def predict(
         self,
@@ -93,19 +94,19 @@ class ModelService:
     ) -> List[Tuple[bool, float, str]]:
         """
         Make predictions on transactions.
-        
+
         Args:
             transactions: List of transaction dictionaries
-            
+
         Returns:
             List of (is_fraud, probability, risk_level) tuples
         """
         if not self._is_loaded:
             raise RuntimeError("Model not loaded. Call load() first.")
-        
+
         # Convert to DataFrame
         df = pd.DataFrame(transactions)
-        
+
         # Apply feature engineering
         if self._feature_engineer is not None:
             try:
@@ -115,7 +116,7 @@ class ModelService:
                 df_fe = df
         else:
             df_fe = df
-        
+
         # Select only the features the model was trained on
         missing_features = set(self._feature_names) - set(df_fe.columns)
         if missing_features:
@@ -123,29 +124,29 @@ class ModelService:
             # Add missing features as zeros (not ideal but prevents errors)
             for feat in missing_features:
                 df_fe[feat] = 0
-        
+
         # Ensure correct column order
         X = df_fe[self._feature_names]
-        
+
         # Get probabilities
         probabilities = self._model.predict_proba(X)[:, 1]
-        
+
         # Create predictions
         results = []
         for prob in probabilities:
             is_fraud = prob >= self.threshold
             risk_level = self._get_risk_level(prob)
             results.append((is_fraud, float(prob), risk_level))
-        
+
         return results
 
     def predict_single(self, transaction: dict) -> Tuple[bool, float, str]:
         """
         Make prediction on a single transaction.
-        
+
         Args:
             transaction: Transaction dictionary
-            
+
         Returns:
             Tuple of (is_fraud, probability, risk_level)
         """
@@ -196,7 +197,9 @@ def get_model_service() -> ModelService:
     return _model_service
 
 
-def init_model_service(model_path: Optional[Path] = None, threshold: float = 0.28) -> ModelService:
+def init_model_service(
+    model_path: Optional[Path] = None, threshold: float = 0.28
+) -> ModelService:
     """Initialize the global model service."""
     global _model_service
     _model_service = ModelService(model_path=model_path, threshold=threshold)

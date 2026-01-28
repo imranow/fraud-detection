@@ -5,9 +5,8 @@ ensemble methods optimized for imbalanced classification.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
-import numpy as np
 import pandas as pd
 from sklearn.ensemble import (
     GradientBoostingClassifier,
@@ -24,6 +23,7 @@ logger = get_logger(__name__)
 # Check for optional dependencies
 try:
     import xgboost as xgb
+
     HAS_XGBOOST = True
 except ImportError as e:
     HAS_XGBOOST = False
@@ -31,6 +31,7 @@ except ImportError as e:
 
 try:
     import lightgbm as lgb
+
     HAS_LIGHTGBM = True
 except ImportError as e:
     HAS_LIGHTGBM = False
@@ -151,7 +152,7 @@ class XGBoostTrainer(BaseTrainer):
     ):
         if not HAS_XGBOOST:
             raise ImportError("XGBoost is not installed. Run: pip install xgboost")
-        
+
         super().__init__(
             model_name="xgboost",
             random_state=random_state,
@@ -184,10 +185,10 @@ class XGBoostTrainer(BaseTrainer):
         params = self.get_default_params()
         params.update(self._model_kwargs)
         params.update(kwargs)
-        
+
         if self.use_early_stopping:
             params["early_stopping_rounds"] = self.early_stopping_rounds
-        
+
         return xgb.XGBClassifier(**params)
 
     def _prepare_fit_kwargs(
@@ -198,11 +199,11 @@ class XGBoostTrainer(BaseTrainer):
         **kwargs,
     ) -> Dict[str, Any]:
         fit_kwargs = {}
-        
+
         if self.use_early_stopping and eval_set is not None:
             fit_kwargs["eval_set"] = [eval_set]
             fit_kwargs["verbose"] = False
-        
+
         return fit_kwargs
 
 
@@ -219,7 +220,7 @@ class LightGBMTrainer(BaseTrainer):
     ):
         if not HAS_LIGHTGBM:
             raise ImportError("LightGBM is not installed. Run: pip install lightgbm")
-        
+
         super().__init__(
             model_name="lightgbm",
             random_state=random_state,
@@ -262,14 +263,14 @@ class LightGBMTrainer(BaseTrainer):
         **kwargs,
     ) -> Dict[str, Any]:
         fit_kwargs = {}
-        
+
         if self.use_early_stopping and eval_set is not None:
             fit_kwargs["eval_set"] = [eval_set]
             fit_kwargs["callbacks"] = [
                 lgb.early_stopping(self.early_stopping_rounds, verbose=False),
                 lgb.log_evaluation(period=0),
             ]
-        
+
         return fit_kwargs
 
 
@@ -280,13 +281,13 @@ def get_trainer(
 ) -> BaseTrainer:
     """
     Factory function to get a trainer by model type.
-    
+
     Args:
-        model_type: One of 'random_forest', 'gradient_boosting', 
+        model_type: One of 'random_forest', 'gradient_boosting',
                    'logistic_regression', 'xgboost', 'lightgbm'
         random_state: Random seed
         **kwargs: Additional model parameters
-        
+
     Returns:
         Configured trainer instance
     """
@@ -295,15 +296,15 @@ def get_trainer(
         "gradient_boosting": GradientBoostingTrainer,
         "logistic_regression": LogisticRegressionTrainer,
     }
-    
+
     if HAS_XGBOOST:
         trainers["xgboost"] = XGBoostTrainer
-    
+
     if HAS_LIGHTGBM:
         trainers["lightgbm"] = LightGBMTrainer
-    
+
     if model_type not in trainers:
         available = list(trainers.keys())
         raise ValueError(f"Unknown model type: {model_type}. Available: {available}")
-    
+
     return trainers[model_type](random_state=random_state, **kwargs)

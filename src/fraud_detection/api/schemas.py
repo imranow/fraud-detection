@@ -1,17 +1,17 @@
 """Pydantic schemas for API request/response validation."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
 
 class TransactionInput(BaseModel):
     """Input schema for a single transaction prediction."""
-    
+
     # Time field (seconds from first transaction)
     Time: float = Field(..., description="Seconds since first transaction in dataset")
-    
+
     # V1-V28 PCA components
     V1: float = Field(..., description="PCA component V1")
     V2: float = Field(..., description="PCA component V2")
@@ -41,7 +41,7 @@ class TransactionInput(BaseModel):
     V26: float = Field(..., description="PCA component V26")
     V27: float = Field(..., description="PCA component V27")
     V28: float = Field(..., description="PCA component V28")
-    
+
     # Amount
     Amount: float = Field(..., ge=0, description="Transaction amount")
 
@@ -84,7 +84,7 @@ class TransactionInput(BaseModel):
 
 class BatchTransactionInput(BaseModel):
     """Input schema for batch predictions."""
-    
+
     transactions: List[TransactionInput] = Field(
         ...,
         min_length=1,
@@ -95,7 +95,7 @@ class BatchTransactionInput(BaseModel):
 
 class PredictionOutput(BaseModel):
     """Output schema for a single prediction."""
-    
+
     is_fraud: bool = Field(..., description="Fraud prediction (True/False)")
     fraud_probability: float = Field(
         ...,
@@ -122,7 +122,7 @@ class PredictionOutput(BaseModel):
 
 class BatchPredictionOutput(BaseModel):
     """Output schema for batch predictions."""
-    
+
     predictions: List[PredictionOutput]
     total_transactions: int
     fraud_detected: int
@@ -131,7 +131,7 @@ class BatchPredictionOutput(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response."""
-    
+
     status: str = Field(..., description="Service status")
     model_loaded: bool = Field(..., description="Whether model is loaded")
     model_name: str = Field(..., description="Name of loaded model")
@@ -141,7 +141,7 @@ class HealthResponse(BaseModel):
 
 class ModelInfoResponse(BaseModel):
     """Model information response."""
-    
+
     model_name: str
     n_features: int
     feature_names: List[str]

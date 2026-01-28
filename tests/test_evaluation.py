@@ -32,7 +32,7 @@ class TestFraudEvaluator:
         """Test evaluation with perfect predictions."""
         y_true, y_proba = perfect_predictions
         result = evaluator.evaluate(y_true, y_proba, threshold=0.5)
-        
+
         assert isinstance(result, EvaluationResult)
         assert result.accuracy == 1.0
         assert result.precision == 1.0
@@ -44,7 +44,7 @@ class TestFraudEvaluator:
         """Test evaluation with realistic predictions."""
         y_true, y_proba = realistic_predictions
         result = evaluator.evaluate(y_true, y_proba, threshold=0.5)
-        
+
         assert 0 <= result.accuracy <= 1
         assert 0 <= result.precision <= 1
         assert 0 <= result.recall <= 1
@@ -54,12 +54,12 @@ class TestFraudEvaluator:
         """Test confusion matrix values."""
         y_true, y_proba = realistic_predictions
         result = evaluator.evaluate(y_true, y_proba, threshold=0.5)
-        
+
         assert result.tn >= 0
         assert result.fp >= 0
         assert result.fn >= 0
         assert result.tp >= 0
-        
+
         # Sum should equal total samples
         total = result.tn + result.fp + result.fn + result.tp
         assert total == len(y_true)
@@ -67,25 +67,29 @@ class TestFraudEvaluator:
     def test_find_optimal_threshold_f1(self, evaluator, realistic_predictions):
         """Test optimal threshold finding for F1."""
         y_true, y_proba = realistic_predictions
-        threshold, score = evaluator.find_optimal_threshold(y_true, y_proba, metric="f1")
-        
+        threshold, score = evaluator.find_optimal_threshold(
+            y_true, y_proba, metric="f1"
+        )
+
         assert 0 <= threshold <= 1
         assert 0 <= score <= 1
 
     def test_find_optimal_threshold_f2(self, evaluator, realistic_predictions):
         """Test optimal threshold finding for F2."""
         y_true, y_proba = realistic_predictions
-        threshold, score = evaluator.find_optimal_threshold(y_true, y_proba, metric="f2")
-        
+        threshold, score = evaluator.find_optimal_threshold(
+            y_true, y_proba, metric="f2"
+        )
+
         assert 0 <= threshold <= 1
 
     def test_cost_calculation(self, evaluator, realistic_predictions):
         """Test cost-based evaluation."""
         y_true, y_proba = realistic_predictions
-        
+
         evaluator_custom = FraudEvaluator(cost_fp=10, cost_fn=100)
         result = evaluator_custom.evaluate(y_true, y_proba, threshold=0.5)
-        
+
         expected_cost = result.fp * 10 + result.fn * 100
         assert result.total_cost == expected_cost
 
@@ -93,7 +97,7 @@ class TestFraudEvaluator:
         """Test PR curve data generation."""
         y_true, y_proba = realistic_predictions
         curve_data = evaluator.get_precision_recall_curve(y_true, y_proba)
-        
+
         assert "precision" in curve_data
         assert "recall" in curve_data
         assert len(curve_data["precision"]) == len(curve_data["recall"])
@@ -102,7 +106,7 @@ class TestFraudEvaluator:
         """Test ROC curve data generation."""
         y_true, y_proba = realistic_predictions
         curve_data = evaluator.get_roc_curve(y_true, y_proba)
-        
+
         assert "fpr" in curve_data
         assert "tpr" in curve_data
         assert len(curve_data["fpr"]) == len(curve_data["tpr"])
@@ -128,7 +132,7 @@ class TestEvaluationResult:
             threshold=0.5,
             total_cost=350.0,
         )
-        
+
         str_repr = str(result)
         assert "EVALUATION RESULTS" in str_repr
         assert "Accuracy" in str_repr
@@ -151,7 +155,7 @@ class TestEvaluationResult:
             threshold=0.5,
             total_cost=350.0,
         )
-        
+
         result_dict = result.to_dict()
         assert result_dict["accuracy"] == 0.95
         assert result_dict["precision"] == 0.80

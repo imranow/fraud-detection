@@ -1,6 +1,5 @@
 """Pytest configuration and fixtures."""
 
-import os
 import sys
 from pathlib import Path
 
@@ -55,7 +54,7 @@ def sample_dataframe(sample_transaction) -> pd.DataFrame:
     # Create 100 sample transactions with some variation
     np.random.seed(42)
     n_samples = 100
-    
+
     data = []
     for i in range(n_samples):
         tx = sample_transaction.copy()
@@ -65,7 +64,7 @@ def sample_dataframe(sample_transaction) -> pd.DataFrame:
                 tx[key] = tx[key] + np.random.normal(0, 0.1)
         tx["Time"] = float(i * 100)
         data.append(tx)
-    
+
     return pd.DataFrame(data)
 
 

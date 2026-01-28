@@ -13,7 +13,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 class AmountFeatures(BaseEstimator, TransformerMixin):
     """Create features based on transaction amount.
-    
+
     Features created:
     - Amount_log: Log-transformed amount
     - Amount_log1p: Log(1+amount) transformation
@@ -33,8 +33,7 @@ class AmountFeatures(BaseEstimator, TransformerMixin):
         if self.create_bins and "Amount" in X.columns:
             # Use quantile-based binning
             self._bin_edges = np.percentile(
-                X["Amount"].values,
-                np.linspace(0, 100, self.n_bins + 1)
+                X["Amount"].values, np.linspace(0, 100, self.n_bins + 1)
             )
             # Ensure unique edges
             self._bin_edges = np.unique(self._bin_edges)
@@ -71,9 +70,13 @@ class AmountFeatures(BaseEstimator, TransformerMixin):
     def get_feature_names_out(self, input_features=None) -> List[str]:
         """Get output feature names."""
         new_features = [
-            "Amount_log", "Amount_log1p", "Amount_sqrt",
-            "Amount_is_round", "Amount_is_round_10", "Amount_is_round_100",
-            "Amount_cents"
+            "Amount_log",
+            "Amount_log1p",
+            "Amount_sqrt",
+            "Amount_is_round",
+            "Amount_is_round_10",
+            "Amount_is_round_100",
+            "Amount_cents",
         ]
         if self.create_bins:
             new_features.append("Amount_bin")
@@ -82,9 +85,9 @@ class AmountFeatures(BaseEstimator, TransformerMixin):
 
 class TimeFeatures(BaseEstimator, TransformerMixin):
     """Create features based on transaction time.
-    
+
     The Time column represents seconds elapsed from the first transaction.
-    
+
     Features created:
     - Hour_of_day: Hour within a 24-hour cycle
     - Time_sin/cos: Cyclical encoding of time
@@ -140,17 +143,22 @@ class TimeFeatures(BaseEstimator, TransformerMixin):
     def get_feature_names_out(self, input_features=None) -> List[str]:
         """Get output feature names."""
         return [
-            "Hour_of_day", "Time_sin", "Time_cos",
-            "Is_night", "Is_business_hours", "Day_elapsed", "Is_weekend"
+            "Hour_of_day",
+            "Time_sin",
+            "Time_cos",
+            "Is_night",
+            "Is_business_hours",
+            "Day_elapsed",
+            "Is_weekend",
         ]
 
 
 class VelocityFeatures(BaseEstimator, TransformerMixin):
     """Create velocity/frequency features based on PCA components.
-    
+
     Since we don't have customer IDs, we create statistical features
     from the V1-V28 components that may capture unusual patterns.
-    
+
     Features created:
     - V_magnitude: L2 norm of V1-V28
     - V_mean: Mean of V1-V28
@@ -196,12 +204,10 @@ class VelocityFeatures(BaseEstimator, TransformerMixin):
         X["V_range"] = X["V_max"] - X["V_min"]
 
         # Higher-order statistics
-        X["V_skew"] = pd.DataFrame(v_data).apply(
-            lambda row: row.skew(), axis=1
-        ).values
-        X["V_kurtosis"] = pd.DataFrame(v_data).apply(
-            lambda row: row.kurtosis(), axis=1
-        ).values
+        X["V_skew"] = pd.DataFrame(v_data).apply(lambda row: row.skew(), axis=1).values
+        X["V_kurtosis"] = (
+            pd.DataFrame(v_data).apply(lambda row: row.kurtosis(), axis=1).values
+        )
 
         # Outlier detection (how many V components are extreme)
         if self._v_stds is not None and self._v_means is not None:
@@ -220,15 +226,28 @@ class VelocityFeatures(BaseEstimator, TransformerMixin):
     def get_feature_names_out(self, input_features=None) -> List[str]:
         """Get output feature names."""
         return [
-            "V_magnitude", "V_mean", "V_std", "V_max", "V_min", "V_range",
-            "V_skew", "V_kurtosis", "V_n_outliers", "V_max_zscore",
-            "V14_abs", "V17_abs", "V12_abs", "V10_abs", "V4_abs", "V11_abs"
+            "V_magnitude",
+            "V_mean",
+            "V_std",
+            "V_max",
+            "V_min",
+            "V_range",
+            "V_skew",
+            "V_kurtosis",
+            "V_n_outliers",
+            "V_max_zscore",
+            "V14_abs",
+            "V17_abs",
+            "V12_abs",
+            "V10_abs",
+            "V4_abs",
+            "V11_abs",
         ]
 
 
 class InteractionFeatures(BaseEstimator, TransformerMixin):
     """Create interaction features between key variables.
-    
+
     Features created:
     - Amount * V component interactions
     - V component ratios
@@ -255,7 +274,7 @@ class InteractionFeatures(BaseEstimator, TransformerMixin):
 
         # Ratios between key V components
         for i, v1 in enumerate(self.top_v_components[:-1]):
-            for v2 in self.top_v_components[i + 1:]:
+            for v2 in self.top_v_components[i + 1 :]:
                 if v1 in X.columns and v2 in X.columns:
                     # Add small epsilon to avoid division by zero
                     X[f"{v1}_div_{v2}"] = X[v1] / (X[v2].abs() + 1e-10)
@@ -273,7 +292,7 @@ class InteractionFeatures(BaseEstimator, TransformerMixin):
         for v in self.top_v_components:
             features.append(f"Amount_x_{v}")
         for i, v1 in enumerate(self.top_v_components[:-1]):
-            for v2 in self.top_v_components[i + 1:]:
+            for v2 in self.top_v_components[i + 1 :]:
                 features.append(f"{v1}_div_{v2}")
         for v in self.top_v_components[:2]:
             features.append(f"{v}_squared")
@@ -282,7 +301,7 @@ class InteractionFeatures(BaseEstimator, TransformerMixin):
 
 class AnomalyScoreFeatures(BaseEstimator, TransformerMixin):
     """Create isolation-based anomaly score features.
-    
+
     Uses distance from cluster centroids and statistical measures
     to create anomaly indicators.
     """
@@ -327,13 +346,9 @@ class AnomalyScoreFeatures(BaseEstimator, TransformerMixin):
 
         # Distance from centroids (if available)
         if self._centroid_normal is not None:
-            X["Dist_to_normal"] = np.linalg.norm(
-                v_data - self._centroid_normal, axis=1
-            )
+            X["Dist_to_normal"] = np.linalg.norm(v_data - self._centroid_normal, axis=1)
         if self._centroid_fraud is not None:
-            X["Dist_to_fraud"] = np.linalg.norm(
-                v_data - self._centroid_fraud, axis=1
-            )
+            X["Dist_to_fraud"] = np.linalg.norm(v_data - self._centroid_fraud, axis=1)
             # Ratio of distances
             if "Dist_to_normal" in X.columns:
                 X["Dist_ratio"] = X["Dist_to_fraud"] / (X["Dist_to_normal"] + 1e-10)
