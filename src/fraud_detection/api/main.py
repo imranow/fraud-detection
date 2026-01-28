@@ -6,12 +6,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import AsyncIterator, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import Counter, Histogram, generate_latest
 from starlette.responses import Response
 
 from fraud_detection import __version__
+from fraud_detection.api.auth import verify_api_key
 from fraud_detection.api.schemas import (
     BatchPredictionOutput,
     BatchTransactionInput,
@@ -129,7 +130,7 @@ async def health_check() -> HealthResponse:
 
 
 @app.get("/model/info", response_model=ModelInfoResponse, tags=["Model"])
-async def model_info() -> ModelInfoResponse:
+async def model_info(_: str = Depends(verify_api_key)) -> ModelInfoResponse:
     """Get information about the loaded model."""
     service = get_model_service()
 
@@ -151,6 +152,7 @@ async def predict_transaction(
     threshold: Optional[float] = Query(
         None, ge=0.0, le=1.0, description="Custom threshold"
     ),
+    _: str = Depends(verify_api_key),
 ) -> PredictionOutput:
     """
     Predict fraud for a single transaction.
@@ -199,6 +201,7 @@ async def predict_transaction(
 async def predict_batch(
     batch: BatchTransactionInput,
     threshold: Optional[float] = Query(None, ge=0.0, le=1.0),
+    _: str = Depends(verify_api_key),
 ) -> BatchPredictionOutput:
     """
     Predict fraud for multiple transactions in batch.

@@ -1,0 +1,215 @@
+# Prometheus deployment for metrics collection
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: fraud-detection
+  labels:
+    app: fraud-detection
+    component: prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: []
+
+    rule_files:
+      - /etc/prometheus/alerting_rules.yml
+
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'fraud-detection'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - fraud-detection
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: replace
+            target_label: app
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+
+  alerting_rules.yml: |
+    groups:
+      - name: fraud_detection_alerts
+        rules:
+          - alert: HighErrorRate
+            expr: |
+              sum(rate(http_server_errors_total{job="fraud-detection"}[5m])) 
+              / sum(rate(http_server_requests_total{job="fraud-detection"}[5m])) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High error rate detected"
+              description: "Error rate is above 5%"
+
+          - alert: HighLatencyP99
+            expr: |
+              histogram_quantile(0.99, 
+                sum(rate(fraud_prediction_latency_seconds_bucket{job="fraud-detection"}[5m])) by (le)
+              ) > 0.5
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High prediction latency"
+              description: "P99 latency is above 500ms"
+
+          - alert: APIDown
+            expr: up{job="fraud-detection"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Fraud Detection API is down"
+
+          - alert: FraudSpike
+            expr: |
+              sum(rate(fraud_detected_total{job="fraud-detection"}[5m])) 
+              > 3 * avg_over_time(sum(rate(fraud_detected_total{job="fraud-detection"}[5m]))[1h:5m])
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Unusual fraud spike detected"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: fraud-detection
+  labels:
+    app: fraud-detection
+    component: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fraud-detection
+      component: prometheus
+  template:
+    metadata:
+      labels:
+        app: fraud-detection
+        component: prometheus
+    spec:
+      serviceAccountName: prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:latest
+          args:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus'
+            - '--web.enable-lifecycle'
+            - '--storage.tsdb.retention.time=15d'
+          ports:
+            - containerPort: 9090
+              name: http
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: storage
+              mountPath: /prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: storage
+          persistentVolumeClaim:
+            claimName: prometheus-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: fraud-detection
+  labels:
+    app: fraud-detection
+    component: prometheus
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9090
+      targetPort: 9090
+      name: http
+  selector:
+    app: fraud-detection
+    component: prometheus
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-pvc
+  namespace: fraud-detection
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+# ServiceAccount and RBAC for Prometheus to discover pods
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: fraud-detection
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: prometheus
+  namespace: fraud-detection
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - services
+      - endpoints
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: prometheus
+  namespace: fraud-detection
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: fraud-detection
