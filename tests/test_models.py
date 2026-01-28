@@ -1,13 +1,9 @@
 """Tests for model trainers."""
 
-import numpy as np
-import pandas as pd
-import pytest
-
 from fraud_detection.models.trainers import (
-    RandomForestTrainer,
     GradientBoostingTrainer,
     LogisticRegressionTrainer,
+    RandomForestTrainer,
 )
 
 
@@ -23,7 +19,7 @@ class TestRandomForestTrainer:
         """Test training and prediction."""
         trainer = RandomForestTrainer(n_estimators=10, random_state=42)
         trainer.fit(sample_dataframe, sample_labels)
-        
+
         predictions = trainer.predict(sample_dataframe)
         assert len(predictions) == len(sample_dataframe)
         assert all(p in [0, 1] for p in predictions)
@@ -32,7 +28,7 @@ class TestRandomForestTrainer:
         """Test probability predictions."""
         trainer = RandomForestTrainer(n_estimators=10, random_state=42)
         trainer.fit(sample_dataframe, sample_labels)
-        
+
         probas = trainer.predict_proba(sample_dataframe)
         assert probas.shape == (len(sample_dataframe), 2)
         assert all(0 <= p <= 1 for p in probas[:, 1])
@@ -41,7 +37,7 @@ class TestRandomForestTrainer:
         """Test feature importance extraction."""
         trainer = RandomForestTrainer(n_estimators=10, random_state=42)
         trainer.fit(sample_dataframe, sample_labels)
-        
+
         importance = trainer.get_feature_importance()
         assert importance is not None
         assert len(importance) == len(sample_dataframe.columns)
@@ -55,7 +51,7 @@ class TestGradientBoostingTrainer:
         """Test training and prediction."""
         trainer = GradientBoostingTrainer(n_estimators=10, random_state=42)
         trainer.fit(sample_dataframe, sample_labels)
-        
+
         predictions = trainer.predict(sample_dataframe)
         assert len(predictions) == len(sample_dataframe)
 
@@ -63,7 +59,7 @@ class TestGradientBoostingTrainer:
         """Test probability predictions."""
         trainer = GradientBoostingTrainer(n_estimators=10, random_state=42)
         trainer.fit(sample_dataframe, sample_labels)
-        
+
         probas = trainer.predict_proba(sample_dataframe)
         assert probas.shape[1] == 2
 
@@ -75,7 +71,7 @@ class TestLogisticRegressionTrainer:
         """Test training and prediction."""
         trainer = LogisticRegressionTrainer(random_state=42)
         trainer.fit(sample_dataframe, sample_labels)
-        
+
         predictions = trainer.predict(sample_dataframe)
         assert len(predictions) == len(sample_dataframe)
 
@@ -83,6 +79,6 @@ class TestLogisticRegressionTrainer:
         """Test probability predictions."""
         trainer = LogisticRegressionTrainer(random_state=42)
         trainer.fit(sample_dataframe, sample_labels)
-        
+
         probas = trainer.predict_proba(sample_dataframe)
         assert probas.shape == (len(sample_dataframe), 2)

@@ -31,30 +31,30 @@ logger = get_logger(__name__)
 @dataclass
 class EvaluationResult:
     """Container for evaluation metrics."""
-    
+
     # Basic metrics
     accuracy: float
     precision: float
     recall: float
     f1: float
     f2: float  # F2 score (weights recall higher than precision)
-    
+
     # AUC metrics
     roc_auc: float
     pr_auc: float  # Precision-Recall AUC
-    
+
     # Confusion matrix
     tn: int
     fp: int
     fn: int
     tp: int
-    
+
     # Threshold-specific
     threshold: float
-    
+
     # Optional: cost-based metrics
     total_cost: Optional[float] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -74,7 +74,7 @@ class EvaluationResult:
             "threshold": self.threshold,
             "total_cost": self.total_cost,
         }
-    
+
     def __str__(self) -> str:
         """String representation."""
         lines = [
@@ -102,7 +102,7 @@ class EvaluationResult:
 
 class FraudEvaluator:
     """Comprehensive evaluator for fraud detection models.
-    
+
     Provides metrics optimized for highly imbalanced datasets where
     false negatives (missed fraud) are typically more costly than
     false positives (false alarms).
@@ -116,7 +116,7 @@ class FraudEvaluator:
     ):
         """
         Initialize the evaluator.
-        
+
         Args:
             cost_fp: Cost of a false positive (false alarm)
             cost_fn: Cost of a false negative (missed fraud)
@@ -134,28 +134,28 @@ class FraudEvaluator:
     ) -> EvaluationResult:
         """
         Evaluate model predictions.
-        
+
         Args:
             y_true: True labels
             y_proba: Predicted probabilities for positive class
             threshold: Classification threshold (default: 0.5)
-            
+
         Returns:
             EvaluationResult with all metrics
         """
         threshold = threshold or self.default_threshold
         y_pred = (y_proba >= threshold).astype(int)
-        
+
         # Confusion matrix
         tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
-        
+
         # Calculate cost
         total_cost = (fp * self.cost_fp) + (fn * self.cost_fn)
-        
+
         # AUC scores
         roc_auc = roc_auc_score(y_true, y_proba)
         pr_auc = average_precision_score(y_true, y_proba)
-        
+
         return EvaluationResult(
             accuracy=accuracy_score(y_true, y_pred),
             precision=precision_score(y_true, y_pred, zero_division=0),
@@ -180,22 +180,22 @@ class FraudEvaluator:
     ) -> Tuple[float, float]:
         """
         Find optimal classification threshold.
-        
+
         Args:
             y_true: True labels
             y_proba: Predicted probabilities
             metric: Metric to optimize ('f1', 'f2', 'recall', 'cost')
-            
+
         Returns:
             Tuple of (optimal_threshold, best_score)
         """
         thresholds = np.arange(0.1, 0.9, 0.01)
         best_score = -np.inf if metric != "cost" else np.inf
         best_threshold = 0.5
-        
+
         for thresh in thresholds:
             y_pred = (y_proba >= thresh).astype(int)
-            
+
             if metric == "f1":
                 score = f1_score(y_true, y_pred, zero_division=0)
                 if score > best_score:
@@ -217,7 +217,7 @@ class FraudEvaluator:
                 if score < best_score:
                     best_score = score
                     best_threshold = thresh
-        
+
         return best_threshold, best_score
 
     def get_precision_recall_curve(
@@ -227,11 +227,11 @@ class FraudEvaluator:
     ) -> Dict[str, np.ndarray]:
         """
         Get precision-recall curve data.
-        
+
         Args:
             y_true: True labels
             y_proba: Predicted probabilities
-            
+
         Returns:
             Dictionary with precision, recall, and thresholds
         """
@@ -249,11 +249,11 @@ class FraudEvaluator:
     ) -> Dict[str, np.ndarray]:
         """
         Get ROC curve data.
-        
+
         Args:
             y_true: True labels
             y_proba: Predicted probabilities
-            
+
         Returns:
             Dictionary with fpr, tpr, and thresholds
         """
@@ -270,10 +270,12 @@ class FraudEvaluator:
         y_pred: np.ndarray,
     ) -> str:
         """Get sklearn classification report."""
-        return classification_report(
-            y_true,
-            y_pred,
-            target_names=["Non-Fraud", "Fraud"],
+        return str(
+            classification_report(
+                y_true,
+                y_pred,
+                target_names=["Non-Fraud", "Fraud"],
+            )
         )
 
     def evaluate_at_multiple_thresholds(
@@ -284,23 +286,23 @@ class FraudEvaluator:
     ) -> pd.DataFrame:
         """
         Evaluate at multiple thresholds.
-        
+
         Args:
             y_true: True labels
             y_proba: Predicted probabilities
             thresholds: List of thresholds to evaluate
-            
+
         Returns:
             DataFrame with metrics at each threshold
         """
         if thresholds is None:
             thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-        
+
         results = []
         for thresh in thresholds:
             result = self.evaluate(y_true, y_proba, threshold=thresh)
             results.append(result.to_dict())
-        
+
         return pd.DataFrame(results)
 
 
@@ -312,20 +314,20 @@ def evaluate_model(
 ) -> EvaluationResult:
     """
     Convenience function to evaluate model predictions.
-    
+
     Args:
         y_true: True labels
         y_proba: Predicted probabilities
         threshold: Classification threshold
         print_results: Whether to print results
-        
+
     Returns:
         EvaluationResult
     """
     evaluator = FraudEvaluator()
     result = evaluator.evaluate(y_true, y_proba, threshold)
-    
+
     if print_results:
         print(result)
-    
+
     return result

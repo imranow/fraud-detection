@@ -18,13 +18,15 @@ __all__ = [
 
 # Add optional trainers if available
 try:
-    from fraud_detection.models.trainers import XGBoostTrainer
+    from fraud_detection.models.trainers import XGBoostTrainer  # noqa: F401
+
     __all__.append("XGBoostTrainer")
 except ImportError:
     pass
 
 try:
-    from fraud_detection.models.trainers import LightGBMTrainer
+    from fraud_detection.models.trainers import LightGBMTrainer  # noqa: F401
+
     __all__.append("LightGBMTrainer")
 except ImportError:
     pass

@@ -3,7 +3,6 @@
 from pathlib import Path
 from typing import Optional, Tuple
 
-import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -32,8 +31,13 @@ class FraudDataLoader:
             random_state: Random seed for reproducibility
         """
         if data_path is None:
-            data_path = Path(__file__).parent.parent.parent.parent / "data" / "raw" / "creditcard.csv"
-        
+            data_path = (
+                Path(__file__).parent.parent.parent.parent
+                / "data"
+                / "raw"
+                / "creditcard.csv"
+            )
+
         self.data_path = Path(data_path)
         self.random_state = random_state
         self._df: Optional[pd.DataFrame] = None
@@ -44,7 +48,9 @@ class FraudDataLoader:
         if self._df is None:
             logger.info(f"Loading data from {self.data_path}")
             self._df = pd.read_csv(self.data_path)
-            logger.info(f"Loaded {len(self._df):,} records with {len(self._df.columns)} columns")
+            logger.info(
+                f"Loaded {len(self._df):,} records with {len(self._df.columns)} columns"
+            )
         return self._df
 
     @property
@@ -149,8 +155,7 @@ class FraudDataLoader:
 
         class_counts = y.value_counts()
         weights = {
-            cls: n_samples / (n_classes * count)
-            for cls, count in class_counts.items()
+            cls: n_samples / (n_classes * count) for cls, count in class_counts.items()
         }
 
         logger.info(f"Class weights: {weights}")

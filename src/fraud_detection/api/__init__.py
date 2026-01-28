@@ -9,7 +9,11 @@ from fraud_detection.api.schemas import (
     PredictionOutput,
     TransactionInput,
 )
-from fraud_detection.api.service import ModelService, get_model_service, init_model_service
+from fraud_detection.api.service import (
+    ModelService,
+    get_model_service,
+    init_model_service,
+)
 
 __all__ = [
     "app",

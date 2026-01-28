@@ -5,9 +5,8 @@ ensemble methods optimized for imbalanced classification.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Type
 
-import numpy as np
 import pandas as pd
 from sklearn.ensemble import (
     GradientBoostingClassifier,
@@ -24,6 +23,7 @@ logger = get_logger(__name__)
 # Check for optional dependencies
 try:
     import xgboost as xgb
+
     HAS_XGBOOST = True
 except ImportError as e:
     HAS_XGBOOST = False
@@ -31,6 +31,7 @@ except ImportError as e:
 
 try:
     import lightgbm as lgb
+
     HAS_LIGHTGBM = True
 except ImportError as e:
     HAS_LIGHTGBM = False
@@ -44,7 +45,7 @@ class RandomForestTrainer(BaseTrainer):
         self,
         random_state: int = 42,
         model_dir: Optional[Path] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(
             model_name="random_forest",
@@ -64,7 +65,7 @@ class RandomForestTrainer(BaseTrainer):
             "n_jobs": -1,
         }
 
-    def _create_model(self, **kwargs) -> RandomForestClassifier:
+    def _create_model(self, **kwargs: Any) -> RandomForestClassifier:
         params = self.get_default_params()
         params.update(self._model_kwargs)
         params.update(kwargs)
@@ -78,7 +79,7 @@ class GradientBoostingTrainer(BaseTrainer):
         self,
         random_state: int = 42,
         model_dir: Optional[Path] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(
             model_name="gradient_boosting",
@@ -97,7 +98,7 @@ class GradientBoostingTrainer(BaseTrainer):
             "random_state": self.random_state,
         }
 
-    def _create_model(self, **kwargs) -> GradientBoostingClassifier:
+    def _create_model(self, **kwargs: Any) -> GradientBoostingClassifier:
         params = self.get_default_params()
         params.update(self._model_kwargs)
         params.update(kwargs)
@@ -111,7 +112,7 @@ class LogisticRegressionTrainer(BaseTrainer):
         self,
         random_state: int = 42,
         model_dir: Optional[Path] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(
             model_name="logistic_regression",
@@ -131,7 +132,7 @@ class LogisticRegressionTrainer(BaseTrainer):
             "n_jobs": -1,
         }
 
-    def _create_model(self, **kwargs) -> LogisticRegression:
+    def _create_model(self, **kwargs: Any) -> LogisticRegression:
         params = self.get_default_params()
         params.update(self._model_kwargs)
         params.update(kwargs)
@@ -147,11 +148,11 @@ class XGBoostTrainer(BaseTrainer):
         model_dir: Optional[Path] = None,
         use_early_stopping: bool = True,
         early_stopping_rounds: int = 50,
-        **kwargs,
+        **kwargs: Any,
     ):
         if not HAS_XGBOOST:
             raise ImportError("XGBoost is not installed. Run: pip install xgboost")
-        
+
         super().__init__(
             model_name="xgboost",
             random_state=random_state,
@@ -180,14 +181,14 @@ class XGBoostTrainer(BaseTrainer):
             "verbosity": 0,
         }
 
-    def _create_model(self, **kwargs) -> "xgb.XGBClassifier":
+    def _create_model(self, **kwargs: Any) -> "xgb.XGBClassifier":
         params = self.get_default_params()
         params.update(self._model_kwargs)
         params.update(kwargs)
-        
+
         if self.use_early_stopping:
             params["early_stopping_rounds"] = self.early_stopping_rounds
-        
+
         return xgb.XGBClassifier(**params)
 
     def _prepare_fit_kwargs(
@@ -195,14 +196,14 @@ class XGBoostTrainer(BaseTrainer):
         X: pd.DataFrame,
         y: pd.Series,
         eval_set: Optional[Tuple[pd.DataFrame, pd.Series]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
-        fit_kwargs = {}
-        
+        fit_kwargs: Dict[str, Any] = {}
+
         if self.use_early_stopping and eval_set is not None:
             fit_kwargs["eval_set"] = [eval_set]
             fit_kwargs["verbose"] = False
-        
+
         return fit_kwargs
 
 
@@ -215,11 +216,11 @@ class LightGBMTrainer(BaseTrainer):
         model_dir: Optional[Path] = None,
         use_early_stopping: bool = True,
         early_stopping_rounds: int = 50,
-        **kwargs,
+        **kwargs: Any,
     ):
         if not HAS_LIGHTGBM:
             raise ImportError("LightGBM is not installed. Run: pip install lightgbm")
-        
+
         super().__init__(
             model_name="lightgbm",
             random_state=random_state,
@@ -248,7 +249,7 @@ class LightGBMTrainer(BaseTrainer):
             "verbose": -1,
         }
 
-    def _create_model(self, **kwargs) -> "lgb.LGBMClassifier":
+    def _create_model(self, **kwargs: Any) -> "lgb.LGBMClassifier":
         params = self.get_default_params()
         params.update(self._model_kwargs)
         params.update(kwargs)
@@ -259,51 +260,51 @@ class LightGBMTrainer(BaseTrainer):
         X: pd.DataFrame,
         y: pd.Series,
         eval_set: Optional[Tuple[pd.DataFrame, pd.Series]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
-        fit_kwargs = {}
-        
+        fit_kwargs: Dict[str, Any] = {}
+
         if self.use_early_stopping and eval_set is not None:
             fit_kwargs["eval_set"] = [eval_set]
             fit_kwargs["callbacks"] = [
                 lgb.early_stopping(self.early_stopping_rounds, verbose=False),
                 lgb.log_evaluation(period=0),
             ]
-        
+
         return fit_kwargs
 
 
 def get_trainer(
     model_type: str = "random_forest",
     random_state: int = 42,
-    **kwargs,
+    **kwargs: Any,
 ) -> BaseTrainer:
     """
     Factory function to get a trainer by model type.
-    
+
     Args:
-        model_type: One of 'random_forest', 'gradient_boosting', 
+        model_type: One of 'random_forest', 'gradient_boosting',
                    'logistic_regression', 'xgboost', 'lightgbm'
         random_state: Random seed
         **kwargs: Additional model parameters
-        
+
     Returns:
         Configured trainer instance
     """
-    trainers = {
+    trainers: Dict[str, Type[BaseTrainer]] = {
         "random_forest": RandomForestTrainer,
         "gradient_boosting": GradientBoostingTrainer,
         "logistic_regression": LogisticRegressionTrainer,
     }
-    
+
     if HAS_XGBOOST:
         trainers["xgboost"] = XGBoostTrainer
-    
+
     if HAS_LIGHTGBM:
         trainers["lightgbm"] = LightGBMTrainer
-    
+
     if model_type not in trainers:
         available = list(trainers.keys())
         raise ValueError(f"Unknown model type: {model_type}. Available: {available}")
-    
+
     return trainers[model_type](random_state=random_state, **kwargs)
