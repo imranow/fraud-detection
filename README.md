@@ -12,7 +12,7 @@
 
 **A production-grade machine learning system for real-time credit card fraud detection.**
 
-[🚀 Live Demo](https://fraud-detection-demo.streamlit.app) • [Features](#-features) • [Quick Start](#-quick-start) • [API Docs](#-api-endpoints)
+[🚀 Live Demo](https://fraud-detection-osf8xo9afx6h4yt8gnrdq8.streamlit.app) • [Features](#-features) • [Quick Start](#-quick-start) • [API Docs](#-api-endpoints)
 
 </div>
 
@@ -95,7 +95,7 @@ flowchart TB
 
 ## 🎯 Live Demo
 
-> **Interactive Demo**: [fraud-detection-demo.streamlit.app](https://fraud-detection-demo.streamlit.app) *(Free hosted demo)*
+> **Interactive Demo**: [fraud-detection-osf8xo9afx6h4yt8gnrdq8.streamlit.app](https://fraud-detection-osf8xo9afx6h4yt8gnrdq8.streamlit.app) *(Free hosted demo)*
 >
 > **API Endpoint**: `https://fraud-detection.up.railway.app` *(Deploy your own - see below)*
 
