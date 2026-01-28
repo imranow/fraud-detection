@@ -5,7 +5,7 @@ ensemble methods optimized for imbalanced classification.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Type
 
 import pandas as pd
 from sklearn.ensemble import (
@@ -45,7 +45,7 @@ class RandomForestTrainer(BaseTrainer):
         self,
         random_state: int = 42,
         model_dir: Optional[Path] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(
             model_name="random_forest",
@@ -65,7 +65,7 @@ class RandomForestTrainer(BaseTrainer):
             "n_jobs": -1,
         }
 
-    def _create_model(self, **kwargs) -> RandomForestClassifier:
+    def _create_model(self, **kwargs: Any) -> RandomForestClassifier:
         params = self.get_default_params()
         params.update(self._model_kwargs)
         params.update(kwargs)
@@ -79,7 +79,7 @@ class GradientBoostingTrainer(BaseTrainer):
         self,
         random_state: int = 42,
         model_dir: Optional[Path] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(
             model_name="gradient_boosting",
@@ -98,7 +98,7 @@ class GradientBoostingTrainer(BaseTrainer):
             "random_state": self.random_state,
         }
 
-    def _create_model(self, **kwargs) -> GradientBoostingClassifier:
+    def _create_model(self, **kwargs: Any) -> GradientBoostingClassifier:
         params = self.get_default_params()
         params.update(self._model_kwargs)
         params.update(kwargs)
@@ -112,7 +112,7 @@ class LogisticRegressionTrainer(BaseTrainer):
         self,
         random_state: int = 42,
         model_dir: Optional[Path] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(
             model_name="logistic_regression",
@@ -132,7 +132,7 @@ class LogisticRegressionTrainer(BaseTrainer):
             "n_jobs": -1,
         }
 
-    def _create_model(self, **kwargs) -> LogisticRegression:
+    def _create_model(self, **kwargs: Any) -> LogisticRegression:
         params = self.get_default_params()
         params.update(self._model_kwargs)
         params.update(kwargs)
@@ -148,7 +148,7 @@ class XGBoostTrainer(BaseTrainer):
         model_dir: Optional[Path] = None,
         use_early_stopping: bool = True,
         early_stopping_rounds: int = 50,
-        **kwargs,
+        **kwargs: Any,
     ):
         if not HAS_XGBOOST:
             raise ImportError("XGBoost is not installed. Run: pip install xgboost")
@@ -181,7 +181,7 @@ class XGBoostTrainer(BaseTrainer):
             "verbosity": 0,
         }
 
-    def _create_model(self, **kwargs) -> "xgb.XGBClassifier":
+    def _create_model(self, **kwargs: Any) -> "xgb.XGBClassifier":
         params = self.get_default_params()
         params.update(self._model_kwargs)
         params.update(kwargs)
@@ -196,9 +196,9 @@ class XGBoostTrainer(BaseTrainer):
         X: pd.DataFrame,
         y: pd.Series,
         eval_set: Optional[Tuple[pd.DataFrame, pd.Series]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
-        fit_kwargs = {}
+        fit_kwargs: Dict[str, Any] = {}
 
         if self.use_early_stopping and eval_set is not None:
             fit_kwargs["eval_set"] = [eval_set]
@@ -216,7 +216,7 @@ class LightGBMTrainer(BaseTrainer):
         model_dir: Optional[Path] = None,
         use_early_stopping: bool = True,
         early_stopping_rounds: int = 50,
-        **kwargs,
+        **kwargs: Any,
     ):
         if not HAS_LIGHTGBM:
             raise ImportError("LightGBM is not installed. Run: pip install lightgbm")
@@ -249,7 +249,7 @@ class LightGBMTrainer(BaseTrainer):
             "verbose": -1,
         }
 
-    def _create_model(self, **kwargs) -> "lgb.LGBMClassifier":
+    def _create_model(self, **kwargs: Any) -> "lgb.LGBMClassifier":
         params = self.get_default_params()
         params.update(self._model_kwargs)
         params.update(kwargs)
@@ -260,9 +260,9 @@ class LightGBMTrainer(BaseTrainer):
         X: pd.DataFrame,
         y: pd.Series,
         eval_set: Optional[Tuple[pd.DataFrame, pd.Series]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
-        fit_kwargs = {}
+        fit_kwargs: Dict[str, Any] = {}
 
         if self.use_early_stopping and eval_set is not None:
             fit_kwargs["eval_set"] = [eval_set]
@@ -277,7 +277,7 @@ class LightGBMTrainer(BaseTrainer):
 def get_trainer(
     model_type: str = "random_forest",
     random_state: int = 42,
-    **kwargs,
+    **kwargs: Any,
 ) -> BaseTrainer:
     """
     Factory function to get a trainer by model type.
@@ -291,7 +291,7 @@ def get_trainer(
     Returns:
         Configured trainer instance
     """
-    trainers = {
+    trainers: Dict[str, Type[BaseTrainer]] = {
         "random_forest": RandomForestTrainer,
         "gradient_boosting": GradientBoostingTrainer,
         "logistic_regression": LogisticRegressionTrainer,

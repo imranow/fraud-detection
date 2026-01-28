@@ -4,7 +4,7 @@ import time
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,7 +43,7 @@ FRAUD_DETECTED = Counter(
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan handler for startup/shutdown."""
     # Startup
     logger.info("Starting fraud detection API...")
@@ -104,7 +104,7 @@ app.add_middleware(
 
 
 @app.get("/", tags=["Root"])
-async def root():
+async def root() -> dict:
     """Root endpoint with API information."""
     return {
         "name": "Fraud Detection API",
@@ -115,7 +115,7 @@ async def root():
 
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
-async def health_check():
+async def health_check() -> HealthResponse:
     """Health check endpoint for load balancers and orchestration."""
     service = get_model_service()
 
@@ -129,7 +129,7 @@ async def health_check():
 
 
 @app.get("/model/info", response_model=ModelInfoResponse, tags=["Model"])
-async def model_info():
+async def model_info() -> ModelInfoResponse:
     """Get information about the loaded model."""
     service = get_model_service()
 
@@ -151,7 +151,7 @@ async def predict_transaction(
     threshold: Optional[float] = Query(
         None, ge=0.0, le=1.0, description="Custom threshold"
     ),
-):
+) -> PredictionOutput:
     """
     Predict fraud for a single transaction.
 
@@ -199,7 +199,7 @@ async def predict_transaction(
 async def predict_batch(
     batch: BatchTransactionInput,
     threshold: Optional[float] = Query(None, ge=0.0, le=1.0),
-):
+) -> BatchPredictionOutput:
     """
     Predict fraud for multiple transactions in batch.
 
@@ -252,7 +252,7 @@ async def predict_batch(
 
 
 @app.get("/metrics", tags=["Monitoring"])
-async def metrics():
+async def metrics() -> Response:
     """Prometheus metrics endpoint."""
     return Response(
         content=generate_latest(),

@@ -28,7 +28,7 @@ class AmountFeatures(BaseEstimator, TransformerMixin):
         self.n_bins = n_bins
         self._bin_edges: Optional[np.ndarray] = None
 
-    def fit(self, X: pd.DataFrame, y=None):
+    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> "AmountFeatures":
         """Fit the transformer, learning bin edges if needed."""
         if self.create_bins and "Amount" in X.columns:
             # Use quantile-based binning
@@ -67,7 +67,9 @@ class AmountFeatures(BaseEstimator, TransformerMixin):
 
         return X
 
-    def get_feature_names_out(self, input_features=None) -> List[str]:
+    def get_feature_names_out(
+        self, input_features: Optional[List[str]] = None
+    ) -> List[str]:
         """Get output feature names."""
         new_features = [
             "Amount_log",
@@ -95,11 +97,11 @@ class TimeFeatures(BaseEstimator, TransformerMixin):
     - Is_weekend: Whether transaction is on weekend (approximate)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._time_min: float = 0
         self._time_max: float = 0
 
-    def fit(self, X: pd.DataFrame, y=None):
+    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> "TimeFeatures":
         """Fit the transformer."""
         if "Time" in X.columns:
             self._time_min = X["Time"].min()
@@ -140,7 +142,9 @@ class TimeFeatures(BaseEstimator, TransformerMixin):
 
         return X
 
-    def get_feature_names_out(self, input_features=None) -> List[str]:
+    def get_feature_names_out(
+        self, input_features: Optional[List[str]] = None
+    ) -> List[str]:
         """Get output feature names."""
         return [
             "Hour_of_day",
@@ -174,7 +178,7 @@ class VelocityFeatures(BaseEstimator, TransformerMixin):
         self._v_means: Optional[np.ndarray] = None
         self._v_stds: Optional[np.ndarray] = None
 
-    def fit(self, X: pd.DataFrame, y=None):
+    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> "VelocityFeatures":
         """Fit the transformer, learning V component statistics."""
         v_cols = [f"V{i}" for i in range(1, 29) if f"V{i}" in X.columns]
         if v_cols:
@@ -223,7 +227,9 @@ class VelocityFeatures(BaseEstimator, TransformerMixin):
 
         return X
 
-    def get_feature_names_out(self, input_features=None) -> List[str]:
+    def get_feature_names_out(
+        self, input_features: Optional[List[str]] = None
+    ) -> List[str]:
         """Get output feature names."""
         return [
             "V_magnitude",
@@ -257,7 +263,9 @@ class InteractionFeatures(BaseEstimator, TransformerMixin):
     def __init__(self, top_v_components: Optional[List[str]] = None):
         self.top_v_components = top_v_components or ["V14", "V17", "V12", "V10"]
 
-    def fit(self, X: pd.DataFrame, y=None):
+    def fit(
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "InteractionFeatures":
         """Fit the transformer."""
         return self
 
@@ -286,7 +294,9 @@ class InteractionFeatures(BaseEstimator, TransformerMixin):
 
         return X
 
-    def get_feature_names_out(self, input_features=None) -> List[str]:
+    def get_feature_names_out(
+        self, input_features: Optional[List[str]] = None
+    ) -> List[str]:
         """Get output feature names."""
         features = []
         for v in self.top_v_components:
@@ -306,13 +316,15 @@ class AnomalyScoreFeatures(BaseEstimator, TransformerMixin):
     to create anomaly indicators.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._centroid_normal: Optional[np.ndarray] = None
         self._centroid_fraud: Optional[np.ndarray] = None
         self._overall_mean: Optional[np.ndarray] = None
         self._overall_std: Optional[np.ndarray] = None
 
-    def fit(self, X: pd.DataFrame, y=None):
+    def fit(
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "AnomalyScoreFeatures":
         """Fit the transformer, computing centroids if labels provided."""
         v_cols = [f"V{i}" for i in range(1, 29) if f"V{i}" in X.columns]
         if not v_cols:
@@ -340,6 +352,7 @@ class AnomalyScoreFeatures(BaseEstimator, TransformerMixin):
         v_data = X[v_cols].values
 
         # Distance from overall mean (Mahalanobis-like)
+        assert self._overall_std is not None
         z_scores = (v_data - self._overall_mean) / (self._overall_std + 1e-10)
         X["Anomaly_zscore_sum"] = np.abs(z_scores).sum(axis=1)
         X["Anomaly_zscore_max"] = np.abs(z_scores).max(axis=1)
@@ -355,7 +368,9 @@ class AnomalyScoreFeatures(BaseEstimator, TransformerMixin):
 
         return X
 
-    def get_feature_names_out(self, input_features=None) -> List[str]:
+    def get_feature_names_out(
+        self, input_features: Optional[List[str]] = None
+    ) -> List[str]:
         """Get output feature names."""
         features = ["Anomaly_zscore_sum", "Anomaly_zscore_max"]
         if self._centroid_normal is not None:

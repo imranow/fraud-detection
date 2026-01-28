@@ -129,6 +129,8 @@ class ModelService:
         X = df_fe[self._feature_names]
 
         # Get probabilities
+        if self._model is None:
+            raise RuntimeError("Model not loaded. Call load() first.")
         probabilities = self._model.predict_proba(X)[:, 1]
 
         # Create predictions

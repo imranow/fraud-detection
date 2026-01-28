@@ -50,7 +50,7 @@ class BaseTrainer(ABC):
         self._feature_names: List[str] = []
 
     @abstractmethod
-    def _create_model(self, **kwargs) -> BaseEstimator:
+    def _create_model(self, **kwargs: Any) -> BaseEstimator:
         """Create the underlying model instance."""
         pass
 
@@ -64,7 +64,7 @@ class BaseTrainer(ABC):
         X: pd.DataFrame,
         y: pd.Series,
         eval_set: Optional[Tuple[pd.DataFrame, pd.Series]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> "BaseTrainer":
         """
         Train the model.
@@ -105,7 +105,7 @@ class BaseTrainer(ABC):
         X: pd.DataFrame,
         y: pd.Series,
         eval_set: Optional[Tuple[pd.DataFrame, pd.Series]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """Prepare arguments for model.fit(). Override in subclasses."""
         return {}
@@ -114,12 +114,14 @@ class BaseTrainer(ABC):
         """Predict class labels."""
         if not self._is_fitted:
             raise ValueError("Model must be fitted before prediction")
+        assert self._model is not None
         return self._model.predict(X)
 
     def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
         """Predict class probabilities."""
         if not self._is_fitted:
             raise ValueError("Model must be fitted before prediction")
+        assert self._model is not None
         return self._model.predict_proba(X)
 
     def get_feature_importance(self) -> Optional[pd.Series]:
@@ -127,6 +129,7 @@ class BaseTrainer(ABC):
         if not self._is_fitted:
             return None
 
+        assert self._model is not None
         if hasattr(self._model, "feature_importances_"):
             return pd.Series(
                 self._model.feature_importances_,
@@ -201,7 +204,7 @@ class BaseTrainer(ABC):
         X: pd.DataFrame,
         y: pd.Series,
         n_folds: int = 5,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, np.ndarray]:
         """
         Perform cross-validation prediction.
@@ -244,5 +247,5 @@ class BaseTrainer(ABC):
     def get_params(self) -> Dict[str, Any]:
         """Get model parameters."""
         if self._model is not None:
-            return self._model.get_params()
+            return dict(self._model.get_params())
         return self.get_default_params()

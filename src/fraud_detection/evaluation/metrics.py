@@ -270,10 +270,12 @@ class FraudEvaluator:
         y_pred: np.ndarray,
     ) -> str:
         """Get sklearn classification report."""
-        return classification_report(
-            y_true,
-            y_pred,
-            target_names=["Non-Fraud", "Fraud"],
+        return str(
+            classification_report(
+                y_true,
+                y_pred,
+                target_names=["Non-Fraud", "Fraud"],
+            )
         )
 
     def evaluate_at_multiple_thresholds(
