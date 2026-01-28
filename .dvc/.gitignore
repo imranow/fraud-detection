@@ -1,0 +1,7 @@
+# DVC cache and temp files
+/cache
+/tmp
+/lock
+
+# Local config (may contain credentials)
+/config.local

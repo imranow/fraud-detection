@@ -1,0 +1,11 @@
+[core]
+    remote = origin
+    autostage = true
+[remote "origin"]
+    url = s3://fraud-detection-data/dvc
+    # For local development, use local storage
+    # url = /path/to/local/dvc-storage
+['remote "origin"']
+    # region = us-east-1
+    # For GCS: url = gs://bucket-name/path
+    # For Azure: url = azure://container-name/path
